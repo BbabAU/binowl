@@ -1,0 +1,154 @@
+[![CI](https://github.com/BbabAU/binowl/actions/workflows/ci.yml/badge.svg)](https://github.com/BbabAU/binowl/actions/workflows/ci.yml)
+
+# binowl
+
+**Pure-Python binary triage toolkit** — hand-rolled ELF/PE parsing, checksec,
+packer & compiler fingerprinting and anti-debug hints, with CLI and MCP-stdio
+interfaces.
+
+> Formerly **rekit** — renamed to `binowl` on 2026-11-20 after a name collision
+> on both PyPI and GitHub. Same codebase, same history; see `CHANGELOG.md`.
+
+## Why binowl?
+
+Every judgement is explainable and reproducible:
+
+- **Hand-rolled parsers** — no `pyelftools`, no `pefile`, no third-party
+  runtime deps; ELF/PE structures are parsed field-by-field in pure Python.
+- **Cross-checked against the authorities** — every fingerprint criterion is
+  validated against `readelf` / `objdump` / `pefile` output (see
+  [Cross-validation](#cross-validation-against-authoritative-tools)).
+- **Explainable fingerprints** — packer/compiler detection is based on
+  net-room observation (section names, doubly-anchored Rich header, block-level
+  median entropy, debug-API families), and honestly reports `unknown` /
+  `n/a` instead of guessing.
+
+## Install
+
+Requires Python >= 3.9 (CI matrix: 3.9 + 3.12, see `.github/workflows/ci.yml`).
+
+```bash
+cd <your-checkout-of-this-repo>
+python3 -m venv .venv && source .venv/bin/activate
+pip install .
+```
+
+This installs the `binowl` console command.
+
+## Usage — three interfaces
+
+### 1. CLI: one-shot triage (auto ELF/PE detection)
+
+```bash
+binowl /bin/ls
+binowl path/to/some.exe
+```
+
+Prints checksec status (NX / RELRO / PIE / W+X segments), entry point,
+section table and program headers. Use `--format elf|pe` to force a format;
+default is magic-byte auto-detection. Exit codes: `0` success, `2` file-level
+error, `3` parse-level error.
+
+### 2. CLI: packer & compiler fingerprint
+
+```bash
+binowl fp path/to/target.exe
+```
+
+Detects UPX (section layout + `UPX!` magic), MSVC Rich header
+(doubly-anchored `DanS^key ↔ Rich^key`), stripped symbols and five
+anti-debug API families, with the evidence spelled out:
+
+```
+fingerprint: UPX
+  compiler: MSVC(modern, b30729)
+  stripped: unknown
+  evidence: 节名 UPX0+UPX1
+  evidence: UPX! magic
+  evidence: Rich 头 11 对 → msvc_modern（DOS stub 幸存）
+  evidence: compiler: MSVC(modern, b30729)
+  anti-debug: n/a（壳内/PE 判据不可用，诚实降级）
+```
+
+### 3. MCP server (stdio)
+
+```bash
+binowl mcp
+```
+
+Speaks JSON-RPC over stdio (echoes MCP protocol version `2025-06-18`),
+exposing the tools `info` (one-shot triage) and `map` (segment/section map).
+Point any MCP client at it, e.g. for Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "binowl": {"command": "binowl", "args": ["mcp"]}
+  }
+}
+```
+
+### Python module
+
+```python
+>>> import binowl
+>>> binowl.__version__
+'0.1.0'
+>>> from binowl import elf, pe, fingerprint
+```
+
+## Sample output
+
+`binowl tests/fixtures/bin_ls.elf` (ELF64 PIE):
+
+```
+Checksec: NX enabled (GNU_STACK RW) | RELRO full | PIE yes | W+X segs none
+Entry: 0x6760  Sections: 30  Phdrs: 14
+Nr  Name                     Type           Address                   Off       Size
+[ 0]                          NULL           0x0000000000000000 0x00000000 0x00000000
+[ 1] .note.gnu.property       NOTE           0x0000000000000350 0x00000350 0x00000020
+[ 2] .note.gnu.build-id       NOTE           0x0000000000000370 0x00000370 0x00000024
+...
+```
+
+## Tests & fixtures
+
+```bash
+pip install pytest
+pytest            # 123 assertions green locally (17 fixtures); on a fresh
+                  # clone: 88 passed + 31 skipped — see provenance note below
+```
+
+Most fixtures are **regenerable** (self-constructed samples, no vendored
+binaries):
+
+```bash
+python3 tests/build_samples.py    # 6 crafted ELF samples + m2_manifest.json
+python3 tests/make_minidll.py     # minimal PE32+ DLL with export table
+python3 tests/make_minipe.py      # minimal PE32+ EXE (with .idata)
+python3 tests/make_fakerich.py    # fake-Rich negative sample (anti-trap)
+```
+
+**Provenance note (redistribution boundary, CHARTER §4):** three fixtures are
+*not* shipped in this repository — `bin_ls.elf` (a copy of the host `/bin/ls`,
+a system binary) and `cli-64.exe` / `cli64_upx.exe` (a bundled launcher binary
+from the setuptools wheel, provenance audit pending). Locally they enable the
+full 123-assertion suite; on a fresh clone the affected tests **skip
+automatically** with an explicit reason (no silent degradation). Self-built
+replacements are tracked as milestone **M2.5d**. Either way, the wheel itself
+ships **only** the `binowl` package, never any fixture
+(`[tool.setuptools] packages = ["binowl"]`).
+
+## Cross-validation against authoritative tools
+
+Parser outputs are diffed against `readelf` / `objdump` / `pefile` — the
+verification scripts live in `tests/` and double as usage examples:
+
+```bash
+python3 tests/verify_fingerprint.py    # fp: all fixtures vs readelf/pefile
+python3 tests/verify_packaging.py      # wheel vs source-tree parity
+```
+
+## License
+
+MIT — see [LICENSE](LICENSE).

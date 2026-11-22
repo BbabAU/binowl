@@ -1,0 +1,28 @@
+# binowl CI — M2.5c（2026-11-22 落盘；建仓后 push/PR 自动生效）
+# 矩阵: 3.9 = pyproject 声明下界（vermin 实测最低 3.4，3.9 为承诺线）
+#        3.12 = 开发主力版本（本机全量 123 断言绿）
+# 步骤与 M2.5a 净室验证的安装路径一致: editable install + pytest。
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false          # 一个版本挂不掩盖另一个版本的结果
+      matrix:
+        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install (editable, with dev extras)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+      - name: Run test suite
+        run: python -m pytest -q

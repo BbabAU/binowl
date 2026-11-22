@@ -1,0 +1,47 @@
+# binowl — 打包元数据（M2.5a，2026-11-18；M2.5e' 更名 rekit→binowl，2026-11-20）
+# 开源交付标准条目 1「可安装」：陌生人 clone 后 `pip install .` 一次成功，
+# console_scripts 提供 `binowl` 命令（info/fp/mcp 三通道，见 binowl/cli.py）。
+# 版本单一事实来源：binowl/__init__.py 的 __version__（dynamic 引用，改一处生效）。
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "binowl"
+dynamic = ["version"]
+description = "Pure-Python binary triage toolkit: hand-rolled ELF/PE parsing, checksec, packer/compiler fingerprint and anti-debug hints, with CLI and MCP-stdio interfaces"
+readme = "README.md"   # M2.5b：注入 METADATA Description（G4 实测抓出缺失后补上）
+requires-python = ">=3.9"   # 声明值；CI 矩阵实测在 M2.5c 兑现
+# SPDX 表达式（PEP 639）；LICENSE 文件本体已随 M2.5b 落盘（2026-11-21）
+license = "MIT"
+# license-files 由 setuptools 自动纳入 dist-info/licenses/（G4 RECORD 实测含 LICENSE）
+keywords = [
+  "reverse-engineering", "binary-analysis", "elf", "pe", "checksec",
+  "packer-detection", "triage", "fingerprint",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Information Technology",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Security",
+]
+
+[project.scripts]
+binowl = "binowl.cli:main"
+
+# M2.5c：dev extras —— CI 与贡献者的可安装测试组（与 .github/workflows/ci.yml
+# 的 `pip install -e '.[dev]'` 保持单一事实来源，C3 净室实测兑付）。
+# pefile = 权威对拍依赖（R3 三方交叉验证）：净室首跑暴露 122+1s vs 开发 123，
+# 差异即对拍测试被 importorskip —— CI 必须同等覆盖，故纳入。
+[project.optional-dependencies]
+dev = ["pytest>=7", "pefile>=2023.2.7"]
+
+[tool.setuptools]
+# 显式声明：不赌 flat-layout 自动发现（tests/ 的样本与源码不入分发包）
+packages = ["binowl"]
+
+[tool.setuptools.dynamic]
+version = { attr = "binowl.__version__" }
