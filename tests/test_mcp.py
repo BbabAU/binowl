@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # binowl MCP 服务器回归测试（M1.5，2026-11-15）
 # 期望值来源：verify_mcp.py 首跑 35/35 PASS 的真实输出——readelf -h/-lW/-SW/-d
-# 与 pefile 现场采集的权威快照（bin_ls.elf: DYN/0x6760/14段/30节/NX·FullRELRO·PIE；
+# 与 pefile 现场采集的权威快照（dyn_ls: DYN/0x10b0/14段/27节/NX·FullRELRO·PIE；
 # minidll.dll: AMD64/DLL/2节/4导出/无Rich）
 import os
 HERE = os.path.dirname(os.path.abspath(__file__))          # tests/
@@ -12,10 +12,10 @@ import subprocess
 import sys
 
 import pytest
-from conftest import SKIP_BIN_LS, SKIP_CLI, has_sample
+from conftest import SKIP_CLI, has_sample
 
 FIX = os.path.join(HERE, "fixtures")
-BIN_LS = os.path.join(FIX, "bin_ls.elf")
+DYN_LS = os.path.join(FIX, "dyn_ls")   # M2.5d：自构造可分发替代 bin_ls.elf
 MINIDLL = os.path.join(FIX, "minidll.dll")
 
 
@@ -108,19 +108,18 @@ def test_tools_list_schema():
 
 # ── E3 info × readelf 权威锚点 ───────────────────────────────
 
-@pytest.mark.skipif(not has_sample("bin_ls.elf"), reason=SKIP_BIN_LS)
 def test_info_elf_anchors():
-    """bin_ls.elf：readelf -h/-lW/-d 定标快照（verify_mcp 35/35 证据）"""
+    """dyn_ls：readelf -h/-lW/-d 定标快照（verify_mcp 35/35 证据）"""
     s = mcp()
-    text, err = s.tool("binowl_info", {"path": BIN_LS})
+    text, err = s.tool("binowl_info", {"path": DYN_LS})
     assert not err
     info = json.loads(text)
     assert info["format"] == "ELF" and info["arch"] == "x86-64"
-    assert info["type"] == "DYN" and info["entry"] == "0x6760"
-    assert info["phdrs"] == 14 and info["sections"] == 30
+    assert info["type"] == "DYN" and info["entry"] == "0x10b0"
+    assert info["phdrs"] == 14 and info["sections"] == 27
     assert info["security"] == {"nx": "enabled", "relro": "full", "pie": "yes"}
     assert info["interpreter"] == "/lib64/ld-linux-x86-64.so.2"
-    assert info["needed"][0] == "libselinux.so.1" and len(info["needed"]) == 3
+    assert info["needed"] == ["libc.so.6"]   # readelf -d 实采（dyn_ls 单 NEEDED）
     s.close()
 
 
@@ -140,10 +139,9 @@ def test_info_pe_anchors():
 
 # ── E4 map × readelf/pefile ──────────────────────────────────
 
-@pytest.mark.skipif(not has_sample("bin_ls.elf"), reason=SKIP_BIN_LS)
 def test_map_elf_segments():
     s = mcp()
-    text, err = s.tool("binowl_map", {"path": BIN_LS, "kind": "segments"})
+    text, err = s.tool("binowl_map", {"path": DYN_LS, "kind": "segments"})
     assert not err
     segs = json.loads(text)
     assert segs["kind"] == "segments" and segs["count"] == 14
@@ -154,13 +152,12 @@ def test_map_elf_segments():
     s.close()
 
 
-@pytest.mark.skipif(not has_sample("bin_ls.elf"), reason=SKIP_BIN_LS)
 def test_map_elf_sections_and_default_kind():
     s = mcp()
-    text, err = s.tool("binowl_map", {"path": BIN_LS, "kind": "sections"})
+    text, err = s.tool("binowl_map", {"path": DYN_LS, "kind": "sections"})
     assert not err
-    assert json.loads(text)["count"] == 30   # readelf -SW
-    text, _ = s.tool("binowl_map", {"path": BIN_LS})
+    assert json.loads(text)["count"] == 27   # readelf -SW
+    text, _ = s.tool("binowl_map", {"path": DYN_LS})
     assert json.loads(text)["kind"] == "segments"  # kind 缺省值
     s.close()
 
@@ -194,24 +191,22 @@ def test_tool_error_text_file(tmp_path):
     s.close()
 
 
-@pytest.mark.skipif(not has_sample("bin_ls.elf"), reason=SKIP_BIN_LS)
 def test_tool_error_missing_path_and_bad_kind():
     s = mcp()
     text, err = s.tool("binowl_info", {})
     assert err and "path" in text
-    text, err = s.tool("binowl_map", {"path": BIN_LS, "kind": "bogus"})
+    text, err = s.tool("binowl_map", {"path": DYN_LS, "kind": "bogus"})
     assert err
     s.close()
 
 
-@pytest.mark.skipif(not has_sample("bin_ls.elf"), reason=SKIP_BIN_LS)
 def test_server_survives_errors():
     """连续工具级错误后连接存活且结果正确（两层错误语义分离的意义）"""
     s = mcp()
     s.tool("binowl_info", {"path": "/no/such/file"})
     s.tool("binowl_info", {})
-    text, err = s.tool("binowl_info", {"path": BIN_LS})
-    assert not err and json.loads(text)["entry"] == "0x6760"
+    text, err = s.tool("binowl_info", {"path": DYN_LS})
+    assert not err and json.loads(text)["entry"] == "0x10b0"
     s.close()
 
 
@@ -224,10 +219,9 @@ def test_unknown_method_jsonrpc_error_and_ping():
     s.close()
 
 
-@pytest.mark.skipif(not has_sample("bin_ls.elf"), reason=SKIP_BIN_LS)
 def test_cli_mcp_short_circuit_preserves_file_analysis():
     """双身份不串台：`binowl mcp` 短路不影响单文件分析路径（58 断言行为）"""
-    r = subprocess.run([sys.executable, "-m", "binowl.cli", BIN_LS],
+    r = subprocess.run([sys.executable, "-m", "binowl.cli", DYN_LS],
                        capture_output=True, text=True, cwd=REPO)
     assert r.returncode == 0
-    assert "Entry: 0x6760" in r.stdout and "Checksec:" in r.stdout
+    assert "Entry: 0x10b0" in r.stdout and "Checksec:" in r.stdout

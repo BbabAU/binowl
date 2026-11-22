@@ -25,7 +25,8 @@ int main(int argc, char **argv) {
         snprintf(buf, sizeof buf, "%s=%d", names[i], arr[i]);
         puts(buf);
     }
-    char *d = strdup("binowl-dyn-ls-anchor");
+    char *d = strdup("binowl-dyn-ls\017\061anchor");  /* 数据含 0F 31 字节（rdtsc 指令编码）：
+        字节级匹配/指令级无 → R43 观察层语义复刻（bin_ls 场景）；等长替换零锚点变动 */
     printf("len=%zu\n", strlen(d));
     free(d);
     return g_count;

@@ -15,7 +15,7 @@ ROOT = os.path.dirname(HERE)
 FIX = os.path.join(ROOT, "tests", "fixtures")
 sys.path.insert(0, ROOT)
 
-from conftest import SKIP_BIN_LS, SKIP_CLI, has_sample
+from conftest import SKIP_CLI, has_sample
 from binowl import elf, fingerprint  # noqa: E402
 
 MAN = json.load(open(os.path.join(HERE, "m2_manifest.json")))
@@ -92,10 +92,9 @@ def test_fakerich_trap():
     assert fp["family"] is None and fp["compiler"] is None
 
 
-@pytest.mark.skipif(not has_sample("bin_ls.elf"), reason=SKIP_BIN_LS)
 def test_binls_no_comment_trap():
-    """bin_ls 无 .comment（发行版构建）——单特征缺失 ≠ 加壳，family 仍 None"""
-    fp = _fp("bin_ls.elf")
+    """dyn_ls 经 objcopy -R .comment（复刻发行版构建）——单特征缺失 ≠ 加壳，family 仍 None"""
+    fp = _fp("dyn_ls")
     assert fp["family"] is None and fp["compiler"] is None and fp["stripped"] is True
 
 

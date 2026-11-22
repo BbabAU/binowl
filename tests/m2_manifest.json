@@ -1,233 +1,251 @@
 {
- "generated": "2026-11-17T01:04:40",
- "toolchain": {
-  "gcc": "gcc (Debian 14.2.0-19) 14.2.0",
-  "upx": "upx 5.0.2"
- },
- "samples": [
-  {
-   "name": "fp_plain",
-   "kind": "elf",
-   "build_cmd": "gcc -o @OUT /home/z/my-project/learning/rekit/tests/src/fp.c",
-   "expect": {
-    "family": null,
-    "packer_version": null,
-    "compiler": "GCC: (Debian 14.2.0-19) 14.2.0",
-    "stripped": false,
-    "_source": "readelf -p .comment / readelf -S"
-   },
-   "path": "tests/fixtures/fp_plain",
-   "sha256": "73140784da81e83b5df84669fc02a9b5e698a7588c5e860f9977e4bfa0b23019"
+  "generated": "2026-11-17T01:04:40",
+  "toolchain": {
+    "gcc": "gcc (Debian 14.2.0-19) 14.2.0",
+    "upx": "upx 5.0.2"
   },
-  {
-   "name": "fp_stripped",
-   "kind": "elf",
-   "build_cmd": "gcc -o @OUT /home/z/my-project/learning/rekit/tests/src/fp.c && strip @OUT",
-   "expect": {
-    "family": null,
-    "packer_version": null,
-    "compiler": "GCC: (Debian 14.2.0-19) 14.2.0",
-    "stripped": true,
-    "_source": "strip 保留 .comment（实测）；symtab 无"
-   },
-   "path": "tests/fixtures/fp_stripped",
-   "sha256": "d1a89f9baffcce6dbf29f4ff3a924c4f4bfa26bc26cc47cdd715ca9ad0515694"
-  },
-  {
-   "name": "fp_static",
-   "kind": "elf",
-   "build_cmd": "gcc -static -o @OUT /home/z/my-project/learning/rekit/tests/src/fp.c",
-   "expect": {
-    "family": null,
-    "packer_version": null,
-    "compiler": "GCC: (Debian 14.2.0-19) 14.2.0",
-    "stripped": false,
-    "_source": "readelf -p .comment / readelf -S"
-   },
-   "path": "tests/fixtures/fp_static",
-   "sha256": "3f79083316d079fd03e7522e48898555f3975f4151c41d7a94d84d6a86befb26"
-  },
-  {
-   "name": "fp_upx",
-   "kind": "elf",
-   "build_cmd": "upx -o @OUT @FIX/fp_plain",
-   "expect": {
-    "family": "UPX",
-    "packer_version": "5.02",
-    "compiler": null,
-    "stripped": null,
-    "_source": "UPX! 魔数 + e_shnum==0 + $Id: UPX 5.02"
-   },
-   "path": "tests/fixtures/fp_upx",
-   "sha256": "b31465ee1a029cbc5e2f4a961313e0742c1239c2c5fefc77c092c408b9885416"
-  },
-  {
-   "name": "fp_upx_static",
-   "kind": "elf",
-   "build_cmd": "upx -o @OUT @FIX/fp_static",
-   "expect": {
-    "family": "UPX",
-    "packer_version": "5.02",
-    "compiler": null,
-    "stripped": null,
-    "_source": "UPX! 魔数 + e_shnum==0 + $Id: UPX 5.02"
-   },
-   "path": "tests/fixtures/fp_upx_static",
-   "sha256": "8dc750981407f4140a5653c5b6e8a8df019d81c95296e1fc641b3ef6c63fb1c4"
-  },
-  {
-   "name": "cli64_upx.exe",
-   "kind": "pe",
-   "build_cmd": "upx -o @OUT @FIX/cli-64.exe",
-   "expect": {
-    "family": "UPX",
-    "packer_version": null,
-    "compiler": "MSVC(modern, b30729)",
-    "stripped": null,
-    "_source": "节名 UPX0+UPX1 + UPX! 魔数；Rich 跨壳幸存"
-   },
-   "path": "tests/fixtures/cli64_upx.exe",
-   "sha256": "31131148debeab663474bfea95b2b6f93a776d1b6395a339572571359842a51d"
-  },
-  {
-   "name": "bin_ls.elf",
-   "kind": "elf",
-   "build_cmd": "(preexisting fixture)",
-   "expect": {
-    "family": null,
-    "packer_version": null,
-    "compiler": null,
-    "stripped": true,
-    "_source": "readelf/parse_rich 实测"
-   },
-   "path": "tests/fixtures/bin_ls.elf",
-   "sha256": "833d6f9cf3ede2225d80eaa159ef78a141c92842a691179aec37d182cc808a5c"
-  },
-  {
-   "name": "dyn_pie",
-   "kind": "elf",
-   "build_cmd": "(preexisting fixture)",
-   "expect": {
-    "family": null,
-    "packer_version": null,
-    "compiler": "GCC: (Debian 14.2.0-19) 14.2.0",
-    "stripped": false,
-    "_source": "readelf/parse_rich 实测"
-   },
-   "path": "tests/fixtures/dyn_pie",
-   "sha256": "953b2278a4ef5fecee0be9d1fed9c02b7d60dd79be2c37a0bd05b853fdffaa57"
-  },
-  {
-   "name": "dyn_nopie",
-   "kind": "elf",
-   "build_cmd": "(preexisting fixture)",
-   "expect": {
-    "family": null,
-    "packer_version": null,
-    "compiler": "GCC: (Debian 14.2.0-19) 14.2.0",
-    "stripped": false,
-    "_source": "readelf/parse_rich 实测"
-   },
-   "path": "tests/fixtures/dyn_nopie",
-   "sha256": "7efb75c940639eba3128f18aee08ddc0877dcba0c76874eda5ab189a5d276e01"
-  },
-  {
-   "name": "dyn_static",
-   "kind": "elf",
-   "build_cmd": "(preexisting fixture)",
-   "expect": {
-    "family": null,
-    "packer_version": null,
-    "compiler": "GCC: (Debian 14.2.0-19) 14.2.0",
-    "stripped": false,
-    "_source": "readelf/parse_rich 实测"
-   },
-   "path": "tests/fixtures/dyn_static",
-   "sha256": "6961ddb33e8e1b80f75173260372219f90f556b57edfa6a3d2203001f7d6d0eb"
-  },
-  {
-   "name": "dyn_norelro",
-   "kind": "elf",
-   "build_cmd": "(preexisting fixture)",
-   "expect": {
-    "family": null,
-    "packer_version": null,
-    "compiler": "GCC: (Debian 14.2.0-19) 14.2.0",
-    "stripped": false,
-    "_source": "readelf/parse_rich 实测"
-   },
-   "path": "tests/fixtures/dyn_norelro",
-   "sha256": "568471010a80d3c8f60cc85ce1ad6a1de5a67261369add6ce1fd4e8dc279cadb"
-  },
-  {
-   "name": "dyn_execstack",
-   "kind": "elf",
-   "build_cmd": "(preexisting fixture)",
-   "expect": {
-    "family": null,
-    "packer_version": null,
-    "compiler": "GCC: (Debian 14.2.0-19) 14.2.0",
-    "stripped": false,
-    "_source": "readelf/parse_rich 实测"
-   },
-   "path": "tests/fixtures/dyn_execstack",
-   "sha256": "c2d4297966b7758c8e0417ca00a3bc23a74b81f815c59f497a742e7fa85339ef"
-  },
-  {
-   "name": "minipe.exe",
-   "kind": "pe",
-   "build_cmd": "(preexisting fixture)",
-   "expect": {
-    "family": null,
-    "packer_version": null,
-    "compiler": null,
-    "stripped": null,
-    "_source": "readelf/parse_rich 实测"
-   },
-   "path": "tests/fixtures/minipe.exe",
-   "sha256": "8bcd9510b9002f9aa15c0387b90b8b6067d915fe435a6a944bfd36154acad4d0"
-  },
-  {
-   "name": "minidll.dll",
-   "kind": "pe",
-   "build_cmd": "(preexisting fixture)",
-   "expect": {
-    "family": null,
-    "packer_version": null,
-    "compiler": null,
-    "stripped": null,
-    "_source": "readelf/parse_rich 实测"
-   },
-   "path": "tests/fixtures/minidll.dll",
-   "sha256": "c8677289f37a30a78a8369fb4843a07eaf53678edca01748d0782ce12e3ef2aa"
-  },
-  {
-   "name": "minipe_fakerich.exe",
-   "kind": "pe",
-   "build_cmd": "(preexisting fixture)",
-   "expect": {
-    "family": null,
-    "packer_version": null,
-    "compiler": null,
-    "stripped": null,
-    "_source": "readelf/parse_rich 实测"
-   },
-   "path": "tests/fixtures/minipe_fakerich.exe",
-   "sha256": "bad43079916e1360c3b1bb26f57ba201bfbe7a0b315dc029bceb62302569961d"
-  },
-  {
-   "name": "cli-64.exe",
-   "kind": "pe",
-   "build_cmd": "(preexisting fixture)",
-   "expect": {
-    "family": null,
-    "packer_version": null,
-    "compiler": "MSVC(modern, b30729)",
-    "stripped": null,
-    "_source": "readelf/parse_rich 实测"
-   },
-   "path": "tests/fixtures/cli-64.exe",
-   "sha256": "bbb3de5707629e6a60a0c238cd477b28f07f0066982fda953fa6fcec39073a4a"
-  }
- ]
+  "samples": [
+    {
+      "name": "fp_plain",
+      "kind": "elf",
+      "build_cmd": "gcc -o @OUT /home/z/my-project/learning/rekit/tests/src/fp.c",
+      "expect": {
+        "family": null,
+        "packer_version": null,
+        "compiler": "GCC: (Debian 14.2.0-19) 14.2.0",
+        "stripped": false,
+        "_source": "readelf -p .comment / readelf -S"
+      },
+      "path": "tests/fixtures/fp_plain",
+      "sha256": "73140784da81e83b5df84669fc02a9b5e698a7588c5e860f9977e4bfa0b23019"
+    },
+    {
+      "name": "fp_stripped",
+      "kind": "elf",
+      "build_cmd": "gcc -o @OUT /home/z/my-project/learning/rekit/tests/src/fp.c && strip @OUT",
+      "expect": {
+        "family": null,
+        "packer_version": null,
+        "compiler": "GCC: (Debian 14.2.0-19) 14.2.0",
+        "stripped": true,
+        "_source": "strip 保留 .comment（实测）；symtab 无"
+      },
+      "path": "tests/fixtures/fp_stripped",
+      "sha256": "d1a89f9baffcce6dbf29f4ff3a924c4f4bfa26bc26cc47cdd715ca9ad0515694"
+    },
+    {
+      "name": "fp_static",
+      "kind": "elf",
+      "build_cmd": "gcc -static -o @OUT /home/z/my-project/learning/rekit/tests/src/fp.c",
+      "expect": {
+        "family": null,
+        "packer_version": null,
+        "compiler": "GCC: (Debian 14.2.0-19) 14.2.0",
+        "stripped": false,
+        "_source": "readelf -p .comment / readelf -S"
+      },
+      "path": "tests/fixtures/fp_static",
+      "sha256": "3f79083316d079fd03e7522e48898555f3975f4151c41d7a94d84d6a86befb26"
+    },
+    {
+      "name": "fp_upx",
+      "kind": "elf",
+      "build_cmd": "upx -o @OUT @FIX/fp_plain",
+      "expect": {
+        "family": "UPX",
+        "packer_version": "5.02",
+        "compiler": null,
+        "stripped": null,
+        "_source": "UPX! 魔数 + e_shnum==0 + $Id: UPX 5.02"
+      },
+      "path": "tests/fixtures/fp_upx",
+      "sha256": "b31465ee1a029cbc5e2f4a961313e0742c1239c2c5fefc77c092c408b9885416"
+    },
+    {
+      "name": "fp_upx_static",
+      "kind": "elf",
+      "build_cmd": "upx -o @OUT @FIX/fp_static",
+      "expect": {
+        "family": "UPX",
+        "packer_version": "5.02",
+        "compiler": null,
+        "stripped": null,
+        "_source": "UPX! 魔数 + e_shnum==0 + $Id: UPX 5.02"
+      },
+      "path": "tests/fixtures/fp_upx_static",
+      "sha256": "8dc750981407f4140a5653c5b6e8a8df019d81c95296e1fc641b3ef6c63fb1c4"
+    },
+    {
+      "name": "cli64_upx.exe",
+      "kind": "pe",
+      "build_cmd": "upx -o @OUT @FIX/cli-64.exe",
+      "expect": {
+        "family": "UPX",
+        "packer_version": null,
+        "compiler": "MSVC(modern, b30729)",
+        "stripped": null,
+        "_source": "节名 UPX0+UPX1 + UPX! 魔数；Rich 跨壳幸存"
+      },
+      "path": "tests/fixtures/cli64_upx.exe",
+      "sha256": "31131148debeab663474bfea95b2b6f93a776d1b6395a339572571359842a51d",
+      "provenance": "EXCLUDED from repo/wheel (decision b, M2.5d) — UPX derivative of cli-64.exe; inherits exclusion above"
+    },
+    {
+      "name": "bin_ls.elf",
+      "kind": "elf",
+      "build_cmd": "(preexisting fixture)",
+      "expect": {
+        "family": null,
+        "packer_version": null,
+        "compiler": null,
+        "stripped": true,
+        "_source": "readelf/parse_rich 实测"
+      },
+      "path": "tests/fixtures/bin_ls.elf",
+      "sha256": "833d6f9cf3ede2225d80eaa159ef78a141c92842a691179aec37d182cc808a5c",
+      "provenance": "EXCLUDED from repo/wheel — host system binary (/bin/ls, Debian coreutils GPL); replaced by self-built dyn_ls (M2.5d, 2026-11-22)"
+    },
+    {
+      "name": "dyn_pie",
+      "kind": "elf",
+      "build_cmd": "(preexisting fixture)",
+      "expect": {
+        "family": null,
+        "packer_version": null,
+        "compiler": "GCC: (Debian 14.2.0-19) 14.2.0",
+        "stripped": false,
+        "_source": "readelf/parse_rich 实测"
+      },
+      "path": "tests/fixtures/dyn_pie",
+      "sha256": "953b2278a4ef5fecee0be9d1fed9c02b7d60dd79be2c37a0bd05b853fdffaa57"
+    },
+    {
+      "name": "dyn_nopie",
+      "kind": "elf",
+      "build_cmd": "(preexisting fixture)",
+      "expect": {
+        "family": null,
+        "packer_version": null,
+        "compiler": "GCC: (Debian 14.2.0-19) 14.2.0",
+        "stripped": false,
+        "_source": "readelf/parse_rich 实测"
+      },
+      "path": "tests/fixtures/dyn_nopie",
+      "sha256": "7efb75c940639eba3128f18aee08ddc0877dcba0c76874eda5ab189a5d276e01"
+    },
+    {
+      "name": "dyn_static",
+      "kind": "elf",
+      "build_cmd": "(preexisting fixture)",
+      "expect": {
+        "family": null,
+        "packer_version": null,
+        "compiler": "GCC: (Debian 14.2.0-19) 14.2.0",
+        "stripped": false,
+        "_source": "readelf/parse_rich 实测"
+      },
+      "path": "tests/fixtures/dyn_static",
+      "sha256": "6961ddb33e8e1b80f75173260372219f90f556b57edfa6a3d2203001f7d6d0eb"
+    },
+    {
+      "name": "dyn_norelro",
+      "kind": "elf",
+      "build_cmd": "(preexisting fixture)",
+      "expect": {
+        "family": null,
+        "packer_version": null,
+        "compiler": "GCC: (Debian 14.2.0-19) 14.2.0",
+        "stripped": false,
+        "_source": "readelf/parse_rich 实测"
+      },
+      "path": "tests/fixtures/dyn_norelro",
+      "sha256": "568471010a80d3c8f60cc85ce1ad6a1de5a67261369add6ce1fd4e8dc279cadb"
+    },
+    {
+      "name": "dyn_execstack",
+      "kind": "elf",
+      "build_cmd": "(preexisting fixture)",
+      "expect": {
+        "family": null,
+        "packer_version": null,
+        "compiler": "GCC: (Debian 14.2.0-19) 14.2.0",
+        "stripped": false,
+        "_source": "readelf/parse_rich 实测"
+      },
+      "path": "tests/fixtures/dyn_execstack",
+      "sha256": "c2d4297966b7758c8e0417ca00a3bc23a74b81f815c59f497a742e7fa85339ef"
+    },
+    {
+      "name": "minipe.exe",
+      "kind": "pe",
+      "build_cmd": "(preexisting fixture)",
+      "expect": {
+        "family": null,
+        "packer_version": null,
+        "compiler": null,
+        "stripped": null,
+        "_source": "readelf/parse_rich 实测"
+      },
+      "path": "tests/fixtures/minipe.exe",
+      "sha256": "8bcd9510b9002f9aa15c0387b90b8b6067d915fe435a6a944bfd36154acad4d0"
+    },
+    {
+      "name": "minidll.dll",
+      "kind": "pe",
+      "build_cmd": "(preexisting fixture)",
+      "expect": {
+        "family": null,
+        "packer_version": null,
+        "compiler": null,
+        "stripped": null,
+        "_source": "readelf/parse_rich 实测"
+      },
+      "path": "tests/fixtures/minidll.dll",
+      "sha256": "c8677289f37a30a78a8369fb4843a07eaf53678edca01748d0782ce12e3ef2aa"
+    },
+    {
+      "name": "minipe_fakerich.exe",
+      "kind": "pe",
+      "build_cmd": "(preexisting fixture)",
+      "expect": {
+        "family": null,
+        "packer_version": null,
+        "compiler": null,
+        "stripped": null,
+        "_source": "readelf/parse_rich 实测"
+      },
+      "path": "tests/fixtures/minipe_fakerich.exe",
+      "sha256": "bad43079916e1360c3b1bb26f57ba201bfbe7a0b315dc029bceb62302569961d"
+    },
+    {
+      "name": "cli-64.exe",
+      "kind": "pe",
+      "build_cmd": "(preexisting fixture)",
+      "expect": {
+        "family": null,
+        "packer_version": null,
+        "compiler": "MSVC(modern, b30729)",
+        "stripped": null,
+        "_source": "readelf/parse_rich 实测"
+      },
+      "path": "tests/fixtures/cli-64.exe",
+      "sha256": "bbb3de5707629e6a60a0c238cd477b28f07f0066982fda953fa6fcec39073a4a",
+      "provenance": "EXCLUDED from repo/wheel (decision b, M2.5d) — bundled launcher binary from the setuptools wheel (MIT upstream pypa/setuptools, see artifacts/2026-11-11/M1_GAP_AUDIT.md L35); UPX-stub compliance unaudited; replacement queued: self-written cli.c MSVC build (O1 batch)"
+    },
+    {
+      "name": "dyn_ls",
+      "kind": "elf",
+      "build_cmd": "gcc -fPIE -pie -Wl,-z,now,-z,relro -o @OUT tests/src/dyn_ls.c && objcopy -R .comment @OUT && strip @OUT",
+      "expect": {
+        "family": null,
+        "packer_version": null,
+        "compiler": null,
+        "stripped": true,
+        "_source": "readelf -S（objcopy -R .comment 后无指纹段；strip 无 .symtab）；.rodata 数据含 0F 31 字节（R43 观察层语义，等长替换零结构锚点变动）"
+      },
+      "provenance": "SELF-BUILT redistributable anchor (M2.5d, 2026-11-22) — 'distro-style' dynamic PIE: Full RELRO + 12 versioned GLIBC imports + 23 RELA + strip + no .comment; replaces bin_ls.elf as ELF test anchor",
+      "path": "tests/fixtures/dyn_ls",
+      "sha256": "c827b452776dacd1ec77059953efebca46e273019c855629827b9cb61172a3f1"
+    }
+  ]
 }

@@ -13,29 +13,29 @@ import sys
 import pytest
 
 sys.path.insert(0, REPO)
-from conftest import SKIP_BIN_LS, SKIP_CLI, has_sample
+from conftest import SKIP_CLI, has_sample
 from binowl.elf import parse  # noqa: E402
 
 FIX = os.path.join(HERE, "fixtures")
 
-# 2026-11-07 快照：/bin/ls (Ubuntu 24.04, coreutils) 30 节名序列
-BIN_LS_SECTIONS = [
+# M2.5d（2026-11-22）锚点样本切换：bin_ls.elf（系统二进制，不可分发）→ dyn_ls
+# （自构造「发行版风格」动态 PIE：strip + 无 .comment + Full RELRO，tests/src/dyn_ls.c 可再生）。
+# 期望值来源 = readelf 2.44/2.38 双端实采快照（artifacts/2026-11-22/dynls_2_44/、dynls_2_38/，逐行一致）。
+DYN_LS_SECTIONS = [
     "", ".note.gnu.property", ".note.gnu.build-id", ".interp", ".gnu.hash",
     ".dynsym", ".dynstr", ".gnu.version", ".gnu.version_r", ".rela.dyn",
     ".rela.plt", ".init", ".plt", ".plt.got", ".text", ".fini", ".rodata",
     ".eh_frame_hdr", ".eh_frame", ".note.ABI-tag", ".init_array",
-    ".fini_array", ".data.rel.ro", ".dynamic", ".got", ".data", ".bss",
-    ".gnu_debugaltlink", ".gnu_debuglink", ".shstrtab",
+    ".fini_array", ".dynamic", ".got", ".data", ".bss", ".shstrtab",
 ]
-BIN_LS_NEEDED = ["libselinux.so.1", "libcap.so.2", "libc.so.6"]
-BIN_LS_DYNAMIC = {"offset": 0x259f8, "vaddr": 0x269f8, "filesz": 0x210}
+DYN_LS_NEEDED = ["libc.so.6"]
+DYN_LS_DYNAMIC = {"offset": 0x2d98, "vaddr": 0x3d98, "filesz": 0x1f0}
+DYN_LS_ENTRY = 0x10b0
 
 
 @pytest.fixture(scope="module")
 def ls():
-    if not has_sample("bin_ls.elf"):
-        pytest.skip(SKIP_BIN_LS)
-    return parse(f"{FIX}/bin_ls.elf")
+    return parse(f"{FIX}/dyn_ls")
 
 
 @pytest.fixture(scope="module")
@@ -46,21 +46,21 @@ def pie():
 # ── 符号表回归（2026-11-08 白银任务，快照值 readelf -sW 交叉验证过）──
 
 def test_dynsym_count_and_null_symbol(ls):
-    # readelf: Symbol table '.dynsym' contains 138 entries（含第 0 号 null 符号）
-    assert len(ls["symbols"]["dynsym"]) == 138
+    # readelf: Symbol table '.dynsym' contains 13 entries（含第 0 号 null 符号）
+    assert len(ls["symbols"]["dynsym"]) == 13
     assert ls["symbols"]["dynsym"][0] == ("", 0, 0, "LOCAL", "NOTYPE", 0)
 
 
 def test_dynsym_imports_value_zero(ls):
-    # SHN_UNDEF(ndx==0) 导入符号 st_value 恒为 0（bin_ls 122 个）
+    # SHN_UNDEF(ndx==0) 导入符号 st_value 恒为 0（dyn_ls 12 个版本化导入）
     imports = [s for s in ls["symbols"]["dynsym"] if s[5] == 0 and s[0]]
-    assert len(imports) == 122
+    assert len(imports) == 12
     assert all(s[1] == 0 for s in imports)
-    assert "getenv" in {s[0] for s in imports}
+    assert {"qsort", "snprintf", "strdup", "printf"} <= {s[0] for s in imports}
 
 
 def test_stripped_binary_has_no_symtab(ls):
-    # bin_ls.elf 无 .symtab（stripped），必须优雅返回 None
+    # dyn_ls 经 strip（发行版语义：无 .symtab），必须优雅返回 None
     assert ls["symbols"]["symtab"] is None
 
 
@@ -90,25 +90,25 @@ def test_static_binary_symtab_no_dynsym():
 # ── ELF 快照回归（自包含，不依赖外部工具）──────────────────────
 
 def test_elf_header(ls):
-    assert ls["entry"] == 0x6760
-    assert len(ls["sections"]) == 30
+    assert ls["entry"] == DYN_LS_ENTRY
+    assert len(ls["sections"]) == 27
     assert len(ls["phdrs"]) == 14
 
 
 def test_section_names_snapshot(ls):
     got = [nm for (nm, *_rest) in ls["sections"]]
-    assert got == BIN_LS_SECTIONS
+    assert got == DYN_LS_SECTIONS
 
 
 def test_dynamic_needed_snapshot(ls):
-    assert ls["dynamic"]["needed"] == BIN_LS_NEEDED
+    assert ls["dynamic"]["needed"] == DYN_LS_NEEDED
 
 
 def test_dynamic_segment_fields_snapshot(ls):
     d = ls["dynamic"]
     assert (d["offset"], d["vaddr"], d["filesz"]) == (
-        BIN_LS_DYNAMIC["offset"], BIN_LS_DYNAMIC["vaddr"],
-        BIN_LS_DYNAMIC["filesz"])
+        DYN_LS_DYNAMIC["offset"], DYN_LS_DYNAMIC["vaddr"],
+        DYN_LS_DYNAMIC["filesz"])
 
 
 def test_dyn_pie():
@@ -133,7 +133,7 @@ def test_static_elf_no_dynamic():
 @pytest.mark.skipif(not shutil.which("readelf"), reason="readelf not available")
 def test_cross_validate_with_readelf(ls):
     out = subprocess.run(
-        ["readelf", "-d", f"{FIX}/bin_ls.elf"],
+        ["readelf", "-d", f"{FIX}/dyn_ls"],
         capture_output=True, text=True).stdout
     ref = [ln.split("[")[1].rstrip("]") for ln in out.splitlines()
            if "Shared library:" in ln]
@@ -144,24 +144,24 @@ def test_cross_validate_with_readelf(ls):
 
 
 def test_reloc_counts_snapshot(ls):
-    # readelf: .rela.dyn contains 215 entries / .rela.plt contains 110 entries
+    # readelf: .rela.dyn contains 16 entries / .rela.plt contains 7 entries
     got = {nm: len(e) for (nm, _off, e) in ls["relocations"]}
-    assert got == {".rela.dyn": 215, ".rela.plt": 110}
+    assert got == {".rela.dyn": 16, ".rela.plt": 7}
 
 
 def test_reloc_type_distribution(ls):
-    # readelf 统计：197 RELATIVE + 12 GLOB_DAT + 6 COPY（.rela.dyn）；110 JUMP_SLOT（.rela.plt）
+    # readelf 统计：11 RELATIVE + 5 GLOB_DAT（.rela.dyn）；7 JUMP_SLOT（.rela.plt）
     ents = {nm: e for (nm, _off, e) in ls["relocations"]}
     dist = {}
     for e in ents[".rela.dyn"]:
         dist[e[2]] = dist.get(e[2], 0) + 1
-    assert dist == {8: 197, 6: 12, 5: 6}  # 8=RELATIVE 6=GLOB_DAT 5=COPY
+    assert dist == {8: 11, 6: 5}  # 8=RELATIVE 6=GLOB_DAT
     assert all(e[2] == 7 for e in ents[".rela.plt"])  # 全 JUMP_SLOT
 
 
 def test_reloc_jumpslot_globdat_in_got(ls):
-    # 110 JUMP_SLOT + 12 GLOB_DAT 的 r_offset 全落 .got [0x26c08, 0x26ff0)
-    # （bin_ls 为 full RELRO 布局，.got.plt 已并入 .got）
+    # 7 JUMP_SLOT + 5 GLOB_DAT 的 r_offset 全落 .got [0x3f88, 0x4000)
+    # （dyn_ls 为 full RELRO 布局，.got.plt 已并入 .got）
     got = next(s for s in ls["sections"] if s[0] == ".got")
     lo, hi = got[2], got[2] + got[4]
     ents = [e for (_n, _o, es) in ls["relocations"] for e in es]
@@ -170,17 +170,11 @@ def test_reloc_jumpslot_globdat_in_got(ls):
             assert lo <= e[0] < hi, "0x%x 越出 .got" % e[0]
 
 
-def test_reloc_copy_bss_stvalue(ls):
-    # 6 条 COPY 落 .bss 且 .dynsym 的 st_value == r_offset（复制语义：libc 数据 → 本模块 .bss）
-    bss = next(s for s in ls["sections"] if s[0] == ".bss")
-    lo, hi = bss[2], bss[2] + bss[4]
+def test_reloc_no_copy_minimal_imports(ls):
+    # dyn_ls 最小导入面（7 PLT + 5 GLOB_DAT + 11 RELATIVE）不消费 libc 数据变量，
+    # 无 COPY 重定位（COPY 语义样本 = bin_ls 的 stdout/optind 等——本地环境另行覆盖）
     copies = [e for (_n, _o, es) in ls["relocations"] for e in es if e[2] == 5]
-    assert len(copies) == 6
-    for e in copies:
-        assert lo <= e[0] < hi
-        assert e[6] == e[0]  # sym st_value == r_offset
-    assert {e[5] for e in copies} == {"__progname", "stdout", "optind",
-                                      "optarg", "__progname_full", "stderr"}
+    assert len(copies) == 0
 
 
 def test_reloc_static_irelative():
@@ -207,11 +201,11 @@ def test_reloc_dynamic_pie_snapshot():
 
 @pytest.mark.skipif(not shutil.which("readelf"), reason="readelf not available")
 def test_cross_validate_relocs_with_readelf(ls):
-    """bin_ls.elf 全量 325 条 (offset,type,name[剥@GLIBC_*],addend) 逐行比对 readelf -rW。
+    """dyn_ls 全量 23 条 (offset,type,name[剥@GLIBC_*],addend) 逐行比对 readelf -rW。
     readelf 显示怪癖：无符号行（RELATIVE）addend 为裸十六进制，带符号行为 '+ 十进制'。"""
     import re
     out = subprocess.run(
-        ["readelf", "-rW", f"{FIX}/bin_ls.elf"],
+        ["readelf", "-rW", f"{FIX}/dyn_ls"],
         capture_output=True, text=True).stdout
     ref = []
     for ln in out.splitlines():
@@ -235,12 +229,12 @@ def test_cross_validate_relocs_with_readelf(ls):
 
 @pytest.mark.skipif(not shutil.which("readelf"), reason="readelf not available")
 def test_cross_validate_dynsym_with_readelf(ls):
-    """bin_ls.elf .dynsym 全量 (name,value) 逐行比对 readelf -sW。
+    """dyn_ls .dynsym 全量 (name,value) 逐行比对 readelf -sW。
     注意 readelf 显示的符号名带 @GLIBC 后缀（来自 .gnu.version 节），
     原始 st_name 不含——比对前必须剥掉。"""
     import re
     out = subprocess.run(
-        ["readelf", "-sW", f"{FIX}/bin_ls.elf"],
+        ["readelf", "-sW", f"{FIX}/dyn_ls"],
         capture_output=True, text=True).stdout
     ref, grab = [], False
     for ln in out.splitlines():
@@ -266,15 +260,13 @@ def test_cross_validate_dynsym_with_readelf(ls):
 @pytest.fixture(scope="module")
 def sec():
     def _get(fn):
-        if fn == "bin_ls.elf" and not has_sample("bin_ls.elf"):
-            pytest.skip(SKIP_BIN_LS)
         return parse(f"{FIX}/{fn}")["security"]
     return _get
 
 
 def test_checksec_bin_ls_full_relro_pie(sec):
-    """/bin/ls：FLAGS BIND_NOW + FLAGS_1 NOW → Full RELRO；DYN+INTERP → PIE。"""
-    s = sec("bin_ls.elf")
+    """dyn_ls（复刻发行版语义）：FLAGS BIND_NOW + FLAGS_1 NOW → Full RELRO；DYN+INTERP → PIE。"""
+    s = sec("dyn_ls")
     assert s["nx"] == "enabled" and s["relro"] == "full" and s["pie"] == "yes"
     assert s["bind_now"] is True          # DT_FLAGS(30)&0x8 ∨ FLAGS_1&0x1 双路径命中
     assert s["relro_filesz"] > 0          # PT_GNU_RELRO 覆盖区间非空
@@ -316,9 +308,7 @@ def test_checksec_dyn_execstack_nx_disabled(sec):
 
 def test_checksec_gnu_stack_flags_rw_standard(sec):
     """标准构建 5 样本 GNU_STACK flags 全为 0x6(RW)，X 位清零 → NX enabled。"""
-    for fn in ("bin_ls.elf", "dyn_pie", "dyn_nopie", "dyn_static", "dyn_norelro"):
-        if fn == "bin_ls.elf" and not has_sample("bin_ls.elf"):
-            continue  # not redistributable — M2.5d replacement pending (CHARTER #4)
+    for fn in ("dyn_ls", "dyn_pie", "dyn_nopie", "dyn_static", "dyn_norelro"):
         s = sec(fn)
         assert s["gnu_stack_flags"] == 0x6, fn
         assert not s["gnu_stack_flags"] & 0x1, fn
@@ -326,10 +316,8 @@ def test_checksec_gnu_stack_flags_rw_standard(sec):
 
 def test_checksec_no_wx_load_segments(sec):
     """全部 6 样本无 W+X 并存的 PT_LOAD（正常编译器产物）；扫描器输出应为空。"""
-    for fn in ("bin_ls.elf", "dyn_pie", "dyn_nopie", "dyn_static",
+    for fn in ("dyn_ls", "dyn_pie", "dyn_nopie", "dyn_static",
                "dyn_norelro", "dyn_execstack"):
-        if fn == "bin_ls.elf" and not has_sample("bin_ls.elf"):
-            continue  # not redistributable — M2.5d replacement pending (CHARTER #4)
         assert sec(fn)["wx_segments"] == [], fn
 
 

@@ -129,15 +129,15 @@ python3 tests/make_minipe.py      # minimal PE32+ EXE (with .idata)
 python3 tests/make_fakerich.py    # fake-Rich negative sample (anti-trap)
 ```
 
-**Provenance note (redistribution boundary, CHARTER §4):** three fixtures are
-*not* shipped in this repository — `bin_ls.elf` (a copy of the host `/bin/ls`,
-a system binary) and `cli-64.exe` / `cli64_upx.exe` (a bundled launcher binary
-from the setuptools wheel, provenance audit pending). Locally they enable the
-full 123-assertion suite; on a fresh clone the affected tests **skip
-automatically** with an explicit reason (no silent degradation). Self-built
-replacements are tracked as milestone **M2.5d**. Either way, the wheel itself
-ships **only** the `binowl` package, never any fixture
-(`[tool.setuptools] packages = ["binowl"]`).
+**Provenance note (redistribution boundary, CHARTER §4):** the ELF anchor sample is
+`dyn_ls` — **self-built** (tests/src/dyn_ls.c: distro-style dynamic PIE, Full RELRO,
+strip, no .comment; regenerable, readelf 2.44/2.38 dual-snapshot verified). Three
+fixtures are *not* shipped: `bin_ls.elf` (host `/bin/ls` — replaced by `dyn_ls`)
+and `cli-64.exe` / `cli64_upx.exe` (setuptools-wheel bundled launcher + UPX
+derivative, provenance registered in the manifest, replacement queued). On a
+fresh clone the affected tests **skip automatically** with an explicit reason
+(no silent degradation). Either way, the wheel itself ships **only** the
+`binowl` package, never any fixture (`[tool.setuptools] packages = ["binowl"]`).
 
 ## Cross-validation against authoritative tools
 

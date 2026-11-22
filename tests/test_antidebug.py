@@ -20,11 +20,11 @@ ROOT = os.path.dirname(HERE)
 FIX = os.path.join(ROOT, "tests", "fixtures")
 sys.path.insert(0, ROOT)
 
-from conftest import SKIP_BIN_LS, SKIP_CLI, has_sample
+from conftest import SKIP_CLI, has_sample
 from binowl import elf, fingerprint, mcp  # noqa: E402
 
 DEMO = os.path.join(FIX, "anti_debug_demo")
-NEG_ELFS = [n for n in ["bin_ls.elf", "dyn_pie", "dyn_nopie", "dyn_static", "dyn_norelro",
+NEG_ELFS = [n for n in ["dyn_ls", "dyn_pie", "dyn_nopie", "dyn_static", "dyn_norelro",
             "dyn_execstack", "fp_plain", "fp_stripped", "fp_static"] if has_sample(n)]
 
 
@@ -71,9 +71,17 @@ def test_negative_fixtures_clean(name):
         "%s 召回层误报: %s" % (name, [f["family"] for f in ad["findings"]])
 
 
-@pytest.mark.skipif(not has_sample("bin_ls.elf"), reason=SKIP_BIN_LS)
+def test_timing_datasegment_no_false_positive():
+    """负样本强化（M2.5d）：dyn_ls .rodata 数据含 0F 31 字节（rdtsc 编码）——
+    数据段字节**不产生** timing 判定（anti_debug_hints 只扫可执行段），observations 零误报。"""
+    ad = _ad(os.path.join(FIX, "dyn_ls"))
+    assert "timing" not in {o["family"] for o in ad["observations"]}
+
+
+@pytest.mark.skipif(not has_sample("bin_ls.elf"),
+                     reason="bin_ls.elf excluded from repo — R43 original scenario (local only)")
 def test_bin_ls_timing_is_observation():
-    """R43 根因回归：bin_ls 字节级 0F31（指令级 0）只能进观察层"""
+    """R43 根因回归（原始场景，本地环境）：bin_ls .text 字节级 0F31（指令级 0）只能进观察层"""
     ad = _ad(os.path.join(FIX, "bin_ls.elf"))
     assert "timing" in {o["family"] for o in ad["observations"]}
 

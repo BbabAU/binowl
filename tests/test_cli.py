@@ -32,13 +32,11 @@ def mod_direct(module, path):
 # ── 自动识别（D1 核心：路由正确性）──────────────────────────────
 
 def test_auto_detect_elf():
-    if not has_sample("bin_ls.elf"):
-        pytest.skip(SKIP_BIN_LS)
-    """ELF 样本走 elf 通道：checksec/entry 均为 ELF 报告字段（0x6760=readelf 定标）"""
-    r = cli(f"{FIX}/bin_ls.elf")
+    """ELF 样本走 elf 通道：checksec/entry 均为 ELF 报告字段（0x10b0=readelf 定标）"""
+    r = cli(f"{FIX}/dyn_ls")
     assert r.returncode == 0
     assert "Checksec: NX enabled" in r.stdout
-    assert "Entry: 0x6760" in r.stdout
+    assert "Entry: 0x10b0" in r.stdout
 
 
 def test_auto_detect_pe():

@@ -11,7 +11,8 @@ def has_sample(name):
     return os.path.exists(os.path.join(FIX, name))
 
 
-SKIP_BIN_LS = ("bin_ls.elf (system /bin/ls copy) not redistributable — "
-               "self-built replacement pending M2.5d audit (CHARTER #4)")
-SKIP_CLI = ("cli-64.exe (bundled setuptools wheel launcher) provenance audit "
-            "pending M2.5d (CHARTER #4)")
+SKIP_BIN_LS = None  # 已解除（M2.5d：bin_ls.elf → 自构造 dyn_ls 替代，锚点重定标完成）
+
+SKIP_CLI = ("cli-64.exe / cli64_upx.exe excluded from repo (M2.5d decision b): "
+            "setuptools-wheel bundled launcher + UPX derivative, provenance "
+            "registered in manifest; self-built MSVC replacement queued (O1 batch)")
