@@ -5,4 +5,4 @@ formerly rekit（2026-11-20 M2.5e' 更名：PyPI/GitHub 双端撞名，naming_ch
 （统一 cli.py：ELF/PE magic 自动识别，`python3 -m binowl.cli <file>`）。
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

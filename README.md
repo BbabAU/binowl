@@ -111,12 +111,39 @@ Nr  Name                     Type           Address                   Off       
 ...
 ```
 
+## Use with AI agents (MCP)
+
+binowl ships an MCP stdio server exposing two tools: `binowl_info` (triage
+summary) and `binowl_map` (segment/section views). Every tool payload carries a
+**`limitations`** field — a structured list of what the result does *not* claim
+(stripped binaries, packed samples, byte-level-only observations), so agents
+can reason about confidence, not just parse output.
+
+**Claude Code:**
+
+```bash
+claude mcp add binowl -- python -m binowl.cli mcp
+```
+
+**Cursor / Codex / any MCP client (`mcp.json`):**
+
+```json
+{
+  "mcpServers": {
+    "binowl": { "command": "python", "args": ["-m", "binowl.cli", "mcp"] }
+  }
+}
+```
+
+Then ask your agent e.g. *"run binowl_info on this binary and tell me what the
+limitations field says before you conclude anything."*
+
 ## Tests & fixtures
 
 ```bash
 pip install pytest
-pytest            # 123 assertions green locally (17 fixtures); on a fresh
-                  # clone: 88 passed + 31 skipped — see provenance note below
+pytest            # 130 assertions green locally (17 fixtures); on a fresh
+                  # clone: 114 passed + 8 skipped — see provenance note below
 ```
 
 Most fixtures are **regenerable** (self-constructed samples, no vendored

@@ -13,6 +13,7 @@ import sys
 
 import pytest
 from conftest import SKIP_CLI, has_sample
+from binowl.mcp import tool_info, tool_map  # noqa: E402  纯函数直测（协议层）；进程级交叉由 McpStdio 测试覆盖
 
 FIX = os.path.join(HERE, "fixtures")
 DYN_LS = os.path.join(FIX, "dyn_ls")   # M2.5d：自构造可分发替代 bin_ls.elf
@@ -199,6 +200,42 @@ def test_tool_error_missing_path_and_bad_kind():
     assert err
     s.close()
 
+
+
+# ── limitations 协议（2026-11-22 REA 对标吸收；键恒存在，条目 {code, detail}）──
+
+def test_limitations_protocol_constant_key():
+    """协议恒在：任意样本 info/map 载荷必含 limitations 键（空数组合法）"""
+    for path in (DYN_LS, MINIDLL):
+        info = tool_info(path)
+        m = tool_map(path)
+        assert "limitations" in info and isinstance(info["limitations"], list)
+        assert "limitations" in m
+        assert all(set(e) == {"code", "detail"} for e in info["limitations"])
+
+
+def test_limitations_dyn_ls_stripped_only():
+    """干净动态 PIE：单条 stripped（符号分析受限是真实边界）；无指纹类误报"""
+    codes = [e["code"] for e in tool_info(DYN_LS)["limitations"]]
+    assert codes == ["stripped"]
+
+
+def test_limitations_fp_upx_packed():
+    """UPX 样本：无节表 + 无动态段双条目——packed 语义边界完整声明"""
+    codes = [e["code"] for e in tool_info(os.path.join(FIX, "fp_upx"))["limitations"]]
+    assert codes == ["no-section-table", "static-binary"]
+
+
+def test_limitations_antidebug_observations_not_findings():
+    """anti_debug_demo：观察层判据显式声明「not findings」（R43 分层进协议）"""
+    codes = [e["code"] for e in tool_info(os.path.join(FIX, "anti_debug_demo"))["limitations"]]
+    assert "anti-debug-observations" in codes
+
+
+def test_limitations_pe_no_rich():
+    """无 Rich 头的 PE：编译器指纹降级边界显式声明（minipe 自构造无 Rich）"""
+    codes = [e["code"] for e in tool_info(os.path.join(FIX, "minipe.exe"))["limitations"]]
+    assert "no-rich-header" in codes
 
 def test_server_survives_errors():
     """连续工具级错误后连接存活且结果正确（两层错误语义分离的意义）"""

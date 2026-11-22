@@ -71,6 +71,48 @@ def _fp_field(path):
             "anti_debug_hints": fp["anti_debug_hints"]}
 
 
+def _collect_limitations(fmt, r, fp, with_fingerprint=True):
+    """REA 式「结论带限制声明」协议（2026-11-22 对标吸收）：每个 info/map 载荷
+    恒含 limitations 键（空数组合法），条目 {code, detail} 只陈述结论的边界，
+    不做预测。全部条目来自既有的诚实降级点，不新增判断逻辑。
+    with_fingerprint=False（map 视图）跳过指纹类条目——指纹结论边界归 info。"""
+    lim = []
+    if fmt == "elf":
+        if not r["sections"]:
+            lim.append({"code": "no-section-table",
+                        "detail": "section table empty — typical of packed binaries "
+                                  "(e.g. UPX); section-based fields degraded"})
+        if not r["dynamic"]:
+            lim.append({"code": "static-binary",
+                        "detail": "no dynamic section; import/needed analysis unavailable"})
+        if not with_fingerprint:
+            return lim
+        if fp is None:
+            lim.append({"code": "fingerprint-unavailable",
+                        "detail": "fingerprint parser failed; field None (defensive degradation)"})
+        elif fp["stripped"]:
+            lim.append({"code": "stripped",
+                        "detail": "symbol table absent; symbol-level analysis limited "
+                                  "to dynamic imports"})
+        hints = fp["anti_debug_hints"] if fp else None
+        obs = (hints or {}).get("observations") or []
+        if obs:
+            lim.append({"code": "anti-debug-observations",
+                        "detail": "%d byte-level observation(s) without instruction-level "
+                                  "confirmation (R43 layering) — not findings" % len(obs)})
+    else:  # PE
+        if not with_fingerprint:
+            return lim
+        if fp is None:
+            lim.append({"code": "fingerprint-unavailable",
+                        "detail": "fingerprint parser failed; field None (defensive degradation)"})
+        if r.get("rich") is None:
+            lim.append({"code": "no-rich-header",
+                        "detail": "Rich header absent (non-MSVC toolchain or stripped); "
+                                  "compiler fingerprint relies on weaker signals"})
+    return lim
+
+
 def tool_info(path):
     """MCP 工具 binowl_info：二进制分诊摘要（格式/架构/入口/安全四态/导入导出/Rich/fingerprint 字段 M2.2 起）。纯函数，返回可 JSON 序列化 dict。"""
     path = _require_path(path if isinstance(path, dict) else {"path": path})
@@ -83,6 +125,7 @@ def tool_info(path):
             if t == elf.PT_INTERP:
                 interp = data[off:off + fsz].rstrip(b"\x00").decode("ascii", "replace")
         sec = r["security"]
+        fp = _fp_field(path)
         return {
             "format": "ELF",
             "arch": MACHINE_ARCH.get(r["machine"], "machine_%d" % r["machine"]),
@@ -96,9 +139,11 @@ def tool_info(path):
             "wx_segments": sec["wx_segments"],
             "interpreter": interp,
             "needed": r["dynamic"]["needed"] if r["dynamic"] else [],
-            "fingerprint": _fp_field(path),
+            "fingerprint": fp,
+            "limitations": _collect_limitations("elf", r, fp),
         }
     r = pe.parse(path)
+    fp = _fp_field(path)
     return {
         "format": "PE",
         "arch": r["machine"],
@@ -114,7 +159,8 @@ def tool_info(path):
             "nfuncs": r["exports"]["nfuncs"]},
         "rich": None if r["rich"] is None else {
             "key": "0x%08X" % r["rich"]["key"], "pairs": len(r["rich"]["pairs"])},
-        "fingerprint": _fp_field(path),
+        "fingerprint": fp,
+        "limitations": _collect_limitations("pe", r, fp),
     }
 
 
@@ -138,15 +184,20 @@ def tool_map(path, kind="segments"):
                        for i, (nm, t, a, o, s) in enumerate(r["sections"])]
         else:
             raise ToolError("kind 必须是 segments 或 sections，收到: %r" % kind)
+        # map 的结论边界 = 结构性条目（指纹类归 info，见 _collect_limitations 签名）
         return {"format": "ELF", "kind": kind, "count": len(entries),
-                "entries": entries}
+                "entries": entries,
+                "limitations": _collect_limitations("elf", r, None,
+                                                    with_fingerprint=False)}
     # PE：无 ELF 式段表，映射单元即节
     r = pe.parse(p)
     entries = [{"index": i, "name": nm, "rva": "0x%x" % va, "vsize": "0x%x" % vs,
                 "rawptr": "0x%x" % rp, "rawsize": "0x%x" % rs}
                for i, (va, vs, rp, rs, nm) in enumerate(r["sections"])]
     return {"format": "PE", "kind": "sections", "count": len(entries),
-            "note": "PE 无 ELF 式段表，map 统一返回节表", "entries": entries}
+            "note": "PE 无 ELF 式段表，map 统一返回节表", "entries": entries,
+            "limitations": _collect_limitations("pe", r, None,
+                                                with_fingerprint=False)}
 
 
 TOOLS = [
