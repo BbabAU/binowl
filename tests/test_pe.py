@@ -163,12 +163,22 @@ def test_minidll_crosscheck_objdump(minidll):
     eat_part = out.split("Export Address Table -- Ordinal Base")[1] \
                  .split("[Ordinal/Name Pointer] Table")[0]
     name_part = out.split("[Ordinal/Name Pointer] Table")[1]
-    obj_eat = {int(m.group(1)): int(m.group(2), 16)
-               for m in re.finditer(r"\[\s*\d+\] \+base\[\s*(\d+)\]\s+([0-9a-f]+)\s+Export RVA", eat_part)}
-# RVA 打印宽度随 objdump 版本不同：2.38 = 4 位裸值(1010)，2.44 = 8 位零填充(00001010)
-# —— 2026-11-22 O3 首次 CI 实测抓出（run #2/#3），正则弹性化双版本兼容（R54）
-    obj_named = {m.group(2): int(m.group(1))
-                 for m in re.finditer(r"\[\s*\d+\] \+base\[\s*(\d+)\]\s+[0-9a-f]+\s+(\w+)", name_part)}
     rk_eat = {e[1]: e[2] for e in minidll["exports"]["exports"]}
     rk_named = {e[0]: e[1] for e in minidll["exports"]["exports"] if e[0]}
-    assert obj_eat == rk_eat and obj_named == rk_named
+    # EAT 逐项：RVA 打印宽度随 objdump 版本不同（2.38 = 4 位裸值 1010 / 2.44 =
+    # 8 位零填充 00001010）——2026-11-22 O3 首次 CI 实测抓出（run #2/#3），
+    # 正则弹性化双版本兼容（R54）
+    obj_eat = {int(m.group(1)): int(m.group(2), 16)
+               for m in re.finditer(r"\[\s*\d+\] \+base\[\s*(\d+)\]\s+([0-9a-f]+)\s+Export RVA", eat_part)}
+    assert obj_eat == rk_eat
+    # name→ordinal 映射：行格式随版本分叉（R54，run #5–#7 抓出）：
+    #   ≥2.43: [   0] +base[   1]  0000 Add —— 带 ordinal+hint，全量对拍
+    #   2.38 : [   0] Add                   —— 无 ordinal 数据源，降级为名字集对拍
+    obj_named = {}
+    for m in re.finditer(r"\[\s*\d+\]\s*\+base\[\s*(\d+)\]\s+[0-9a-f]+\s+(\w+)", name_part):
+        obj_named[m.group(2)] = int(m.group(1))
+    if obj_named:
+        assert obj_named == rk_named, (obj_named, rk_named)
+    else:
+        names = set(re.findall(r"\[\s*\d+\]\s+(\w+)", name_part))
+        assert names == set(rk_named), (names, set(rk_named))
