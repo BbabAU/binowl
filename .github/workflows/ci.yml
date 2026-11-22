@@ -26,5 +26,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e '.[dev]'
+      - name: Toolchain anchors (objdump version + minidll export dump)
+        run: |
+          objdump --version | head -1
+          objdump -p tests/fixtures/minidll.dll | sed -n '/Export Address Table/,/Ordinal\/Name Pointer/p'
       - name: Run test suite
         run: python -m pytest -q
