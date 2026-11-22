@@ -31,5 +31,9 @@ jobs:
           objdump --version | head -1
           objdump -p tests/fixtures/minidll.dll | sed -n '/Export Address Table/,/Ordinal\/Name Pointer/p'
           objdump -p tests/fixtures/minidll.dll | grep -A 12 'Ordinal/Name Pointer'
+      - name: readelf anchors (dyn_ls full snapshot, M2.5d re-anchor)
+        run: |
+          readelf --version | head -1
+          for opt in h lW SW d rW sW; do echo "== -$opt =="; readelf -$opt tests/fixtures/dyn_ls; done
       - name: Run test suite
         run: python -m pytest -q
