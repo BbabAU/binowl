@@ -10,7 +10,9 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # ubuntu-22.04: ubuntu-latest resolves to 26.04 whose setup-python
+    # manifest no longer ships Python 3.9 (CI run #1, 2026-11-22)
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false          # 一个版本挂不掩盖另一个版本的结果
       matrix:
