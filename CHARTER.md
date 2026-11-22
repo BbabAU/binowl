@@ -29,8 +29,14 @@
 > **binowl**（binwalk 谱系 + owl「看透黑暗」；PyPI/GitHub 双端实测最净，证据
 > artifacts/2026-11-19/naming_check.log）；import/dist/CLI/MCP 工具名统一为 binowl，工程根
 > 目录 learning/rekit/ 不变（cron 路径兼容），历史文档 rekit = 曾用名；重命名执行 =
-> M2.5e'（TASK_m25e_rename.md，标准 R1–R6 预写锁死）已 ✅。**开放项 O3：GitHub 建仓待用户指令**
-> （ci.yml 已落盘，建仓即生效；徽章届时挂真链）。
+> M2.5e'（TASK_m25e_rename.md，标准 R1–R6 预写锁死）已 ✅。**O3 已闭环（2026-11-22 用户「建仓」授权）**：
+> https://github.com/BbabAU/binowl public，main @ Initial release v0.1.0（47 文件）；CI 双矩阵 3.9+3.12
+> run#10 全绿、README 徽章 passing 挂真链。**M2.5d ✅（同日续跑）**：ELF 锚点样本 bin_ls.elf → 自构造
+> dyn_ls（distro 风格 PIE，readelf 双端快照重定标），bin_ls 系 skip 全解除（克隆 88+31s→114+8s，
+> readelf 对拍 CI 首跑），cli 系决策 b 排除+manifest provenance 登记；**M2.5 五刀（a/e'/b/c/d）全部
+> 收官，本地 125 断言常绿，CI 双矩阵全绿**。**v0.2.0 已发布（2026-11-22）**：limitations 协议
+> （MCP 载荷恒含结论边界声明，REA 纪律吸收）+ agent 接入指南 + GitHub Release
+> （github.com/BbabAU/binowl/releases/tag/v0.2.0）；130 断言常绿。
 
 ## 长期目标（v1.0，对齐 ROADMAP 三阶段）
 
@@ -66,7 +72,7 @@
 
 - **允许**：发现问题（标准不合理/外部依赖变化）或优化算法后，自主修改任务要求与验收标准
 - **纪律**（三条红线不可越）：
-  1. 每次变更必须记入 CHANGELOG.md：`日期 | 旧标准 → 新标准 | 原因 | 影响评估`，无日志的变更无效
+  1. 每次变更必须记入 TASKLOG.md（内部变更日志，不入公开仓库）：`日期 | 旧标准 → 新标准 | 原因 | 影响评估`，无日志的变更无效。仓库根的 `CHANGELOG.md` 是**面向用户**的版本变更日志（Keep a Changelog 格式），不承载内部条目
   2. 变更不得用于掩盖当日失败——失败照实记录，只能从次日起用新标准
   3. 标准只能更精确/更合理（可证伪性不降），不得降级为不可验证
 - **不适用**：每日短期任务（巡检、知识点）仍执行"标准执行前写定、不许放宽"的硬规则
@@ -75,12 +81,13 @@
 
 ```
 learning/rekit/
-├── CHARTER.md      # 本章程
-├── PROGRESS.md     # 每日进度回写 + 速度基线数据
-├── CHANGELOG.md    # 任务/验收标准变更日志
-├── rekit/          # 源码包
-│   ├── elf.py      # ELF 解析器（由 mini_elf.py 起家）
-│   ├── pe.py       # PE 解析器
-│   └── cli.py      # 命令行入口
-└── tests/          # 交叉验证回归测试
+├── CHARTER.md      # 本章程（公开）
+├── README.md / LICENSE / pyproject.toml / .gitignore
+│                   # 开源交付面（公开）
+├── CHANGELOG.md    # 面向用户的版本变更日志（Keep a Changelog，公开）
+├── PROGRESS.md     # 每日进度回写 + 速度基线数据（内部，不入库）
+├── TASKLOG.md      # 任务/验收标准变更日志（内部，不入库；2026-11-23 前名为 CHANGELOG.md）
+├── REKIT-PLAN.md   # 里程碑规划（内部，不入库）
+├── binowl/         # 源码包：elf / pe / fingerprint / cli / mcp
+└── tests/          # 交叉验证回归测试（fixtures 含再生脚本与 provenance 清单）
 ```
