@@ -44,11 +44,11 @@
 > **M2.5 六件套（a/e'/b/c/d/f）全部收官 → 下一步 M3 map&patch。**
 > **M3.1 ✅（2026-11-24，M3 开工首期）**：内存映射视图 + 地址换算——新模块 binowl/map.py + `binowl map <file> [--to-offset ADDR]`
 > 子命令；elf.parse phdrs 5→6 字段（补 p_memsz）；修复 pe.rva_to_raw 两处潜伏缺口（头区 1:1 / 虚拟尾越界偏移→None）。
-> A1–A7 全 PASS：13 ELF × 48 LOAD 三方全等（map/elf.parse/readelf）、327 条边界断言 0 败、PE 节表 4/4 vs pefile、
+> A1–A7 达标（A3 = 4/4 节表全等 + fakerich 全零节表 1 N/A，如实口径见 TASKLOG）：13 ELF × 48 LOAD 三方全等（map/elf.parse/readelf）、327 条边界断言 0 败、PE 节表 4/4 vs pefile、
 > VTAIL 6/6 坐实 pefile 越界盲区；pytest 130→181（公开克隆 164 passed + 14 skipped，06:30 槽 push 前审出并修复
-> test_map.py 分发边界 skipif 缺口）。解析类档位首期实记 22/3。**远端 push 待 OAuth 重授权**（11-24 06:03 实测 401），
-> 用户 CHANGELOG 已备 [Unreleased]（Added/Fixed/Changed/Notes），版本未 bump（留 M3 阶段收口或用户定夺）。
-> 下一步 M3.2 IAT 修复雏形 / M3.1b 运行时基址对拍。
+> test_map.py 分发边界 skipif 缺口）。解析类档位首期实记 26/4（含 06:30 槽返工 1 → 第 19 期降档巩固）。**远端已同步**：9 文件单 commit main 9a2a9ab7 → 5d93d68c，
+> 读回 BYTE-IDENTICAL，CI run #20 双矩阵 success（CI 实测 164 passed + 14 skipped）；用户 CHANGELOG [Unreleased]（Added/Fixed/Changed/Notes）已上远端，版本未 bump（留 M3 阶段收口或用户定夺）。
+> 下一步 M3.1b 运行时基址对拍（降档巩固期，取小）→ M3.2 IAT 修复雏形。
 
 ## 长期目标（v1.0，对齐 ROADMAP 三阶段）
 
