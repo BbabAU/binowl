@@ -121,7 +121,7 @@ def tool_info(path):
         r = elf.parse(path)
         data = open(path, "rb").read()
         interp = None
-        for (t, _fl, off, _va, fsz) in r["phdrs"]:
+        for (t, _fl, off, _va, fsz, _msz) in r["phdrs"]:
             if t == elf.PT_INTERP:
                 interp = data[off:off + fsz].rstrip(b"\x00").decode("ascii", "replace")
         sec = r["security"]
@@ -177,7 +177,7 @@ def tool_map(path, kind="segments"):
             entries = [{"index": i, "type": PT_NAMES.get(t, "PT_%x" % t),
                         "flags": pflags_str(fl), "vaddr": "0x%x" % va,
                         "offset": "0x%x" % off, "filesz": "0x%x" % fsz}
-                       for i, (t, fl, off, va, fsz) in enumerate(r["phdrs"])]
+                       for i, (t, fl, off, va, fsz, _msz) in enumerate(r["phdrs"])]
         elif kind == "sections":
             entries = [{"index": i, "name": nm, "type": t, "addr": "0x%x" % a,
                         "offset": "0x%x" % o, "size": "0x%x" % s}

@@ -58,9 +58,10 @@ def parse(path):
     phdrs = []
     for i in range(e_phnum):
         off = e_phoff + i * e_phentsize
-        (p_type, p_flags, p_offset, p_vaddr, _pa, p_filesz, _msz, _al) = \
+        (p_type, p_flags, p_offset, p_vaddr, _pa, p_filesz, p_memsz, _al) = \
             struct.unpack_from(end + "IIQQQQQQ", data, off)
-        phdrs.append((p_type, p_flags, p_offset, p_vaddr, p_filesz))
+        # 2026-11-24 M3.1：元组 5→6 字段，补 p_memsz（内存映射视图需区分文件背衬 filesz 与零填充 memsz）
+        phdrs.append((p_type, p_flags, p_offset, p_vaddr, p_filesz, p_memsz))
 
     # ---- 节表 + shstrtab 节名（基线A新增） ----
     # 元组增补 sh_link/sh_entsize（2026-11-08：符号表解析需要 sh_link 定位字符串表节）
@@ -90,7 +91,7 @@ def parse(path):
     # 技术核心：DT_STRTAB 的值是 vaddr，PIE/非 PIE 中都可能与文件偏移不同，
     # 必须经 PT_LOAD 映射换算：file_off = vaddr - p_vaddr + p_offset
     def vaddr_to_off(v):
-        for (_t, _fl, off, va, fsz) in phdrs:
+        for (_t, _fl, off, va, fsz, _msz) in phdrs:
             if _t == PT_LOAD and va <= v < va + fsz:
                 return v - va + off
         return None
@@ -98,7 +99,7 @@ def parse(path):
     dynamic = None
     dyn_ph = next((p for p in phdrs if p[0] == PT_DYNAMIC), None)
     if dyn_ph is not None:
-        _t, _fl, d_off, d_va, d_fsz = dyn_ph
+        _t, _fl, d_off, d_va, d_fsz, _msz = dyn_ph
         # Elf64_Dyn = { Elf64_Sxword d_tag; union d_val; } 共 16 字节
         entries = []
         for i in range(d_fsz // 16):

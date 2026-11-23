@@ -33,7 +33,7 @@ def detect_format(path):
 
 
 def main(argv=None):
-    """统一 CLI 入口：`binowl <file>` 分诊解析 / `binowl mcp` MCP 服务器 / `binowl fp <file>` 净室指纹。返回进程退出码（0 成功 / 2 文件级 / 3 解析级，R30 语义分层）。"""
+    """统一 CLI 入口：`binowl <file>` 分诊解析 / `binowl mcp` MCP 服务器 / `binowl fp <file>` 净室指纹 / `binowl map <file>` 内存映射视图。返回进程退出码（0 成功 / 2 文件级 / 3 解析级，R30 语义分层）。"""
     # M1.5（2026-11-15）：`binowl mcp` 启动 MCP stdio 服务器（CLI+MCP 双身份）。
     # 手动短路而非 argparse subparsers——保持单文件位置参数行为与 58 断言逐字节兼容。
     argv = sys.argv[1:] if argv is None else list(argv)
@@ -44,6 +44,10 @@ def main(argv=None):
     if argv and argv[0] == "fp":
         from . import fingerprint
         return fingerprint.main(argv[1:])
+    # M3.1（2026-11-24）：`binowl map <file>` 内存映射视图 + 地址换算
+    if argv and argv[0] == "map":
+        from . import map as _map
+        return _map.main(argv[1:])
     ap = argparse.ArgumentParser(
         prog="binowl.cli",
         description="binowl 统一入口：自动识别 ELF/PE 并输出分诊解析报告")

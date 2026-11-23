@@ -57,11 +57,12 @@ def parse_rich_header(data, e_lfanew):
 
 
 def rva_to_raw(rva, sections):
-    """RVA → 文件偏移换算：按节表 (VA, VSize, RawPtr, RawSize) 区间映射；RVA 落 NOBITS（RawSize=0）或不落任何节时返回 None。"""
+    """RVA → 文件偏移换算：仅节表 (VA, VSize, RawPtr, RawSize) 的 RawSize 范围内有文件背衬（rawptr + rva - va）；
+    [va+RawSize, va+VSize) 是加载时零填充的虚拟尾，RawSize=0（NOBITS）与不落任何节均返回 None。
+    2026-11-24 M3.1 修复：原实现按 max(VSize, RawSize) 判界，虚拟尾会算出越过该节原始数据的偏移
+    （真实样本证据见 artifacts/2026-11-24/evidence_m31_rva_to_raw_before.log）。"""
     for (va, vsize, rawptr, rawsize, _name) in sections:
-        if va <= rva < va + max(vsize, rawsize):
-            if rawsize == 0:            # NOBITS/未初始化
-                return None
+        if rawsize and va <= rva < va + rawsize:
             return rawptr + (rva - va)
     return None
 

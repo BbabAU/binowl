@@ -35,7 +35,7 @@ pip install .
 
 This installs the `binowl` console command.
 
-## Usage — three interfaces
+## Usage
 
 ### 1. CLI: one-shot triage (auto ELF/PE detection)
 
@@ -70,7 +70,27 @@ fingerprint: UPX
   anti-debug: n/a（壳内/PE 判据不可用，诚实降级）
 ```
 
-### 3. MCP server (stdio)
+### 3. CLI: memory map & address translation
+
+```bash
+binowl map path/to/target --to-offset 0x10b0 --to-offset 0x100000
+```
+
+Prints the static memory map — ELF: every `PT_LOAD` with its file-backed
+range, zero-fill tail (`.bss`) and page range; PE: header region and every
+section (`VA = ImageBase + RVA`, default non-ASLR layout). `--to-offset`
+translates virtual addresses to file offsets; zero-filled or unmapped
+addresses report `<no file backing>` instead of a made-up offset:
+
+```
+LOAD #5  RW   vaddr [0x3d88, 0x4068) memsz 0x2e0
+            file [0x2d88, 0x3060)  offset = 0x2d88 + (va - 0x3d88)
+            zero-fill [0x4060, 0x4068)  pages [0x3000, 0x5000)
+to-offset: va 0x10b0 -> file 0x10b0 (LOAD #3)
+to-offset: va 0x100000 -> <no file backing> (zero-fill / unmapped)
+```
+
+### 4. MCP server (stdio)
 
 ```bash
 binowl mcp
@@ -93,8 +113,8 @@ Point any MCP client at it, e.g. for Claude Desktop:
 ```python
 >>> import binowl
 >>> binowl.__version__
-'0.1.0'
->>> from binowl import elf, pe, fingerprint
+'0.2.0'
+>>> from binowl import elf, pe, fingerprint, map
 ```
 
 ## Sample output
@@ -142,8 +162,8 @@ limitations field says before you conclude anything."*
 
 ```bash
 pip install pytest
-pytest            # 130 assertions green locally (17 fixtures); on a fresh
-                  # clone: 114 passed + 8 skipped — see provenance note below
+pytest            # 181 assertions green locally (17 fixtures); on a fresh
+                  # clone: 164 passed + 14 skipped — see provenance note below
 ```
 
 Most fixtures are **regenerable** (self-constructed samples, no vendored

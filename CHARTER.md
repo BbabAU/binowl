@@ -37,6 +37,18 @@
 > 收官，本地 125 断言常绿，CI 双矩阵全绿**。**v0.2.0 已发布（2026-11-22）**：limitations 协议
 > （MCP 载荷恒含结论边界声明，REA 纪律吸收）+ agent 接入指南 + GitHub Release
 > （github.com/BbabAU/binowl/releases/tag/v0.2.0）；130 断言常绿。
+> **M2.5f ✅（2026-11-23，收官对账）**：面向用户 CHANGELOG.md 落仓库根（Keep a Changelog，
+> [0.1.0]/[0.2.0]/[Unreleased]，API 读回 BYTE-IDENTICAL）+ .gitignore 标准条目；内部变更日志
+> 更名 TASKLOG.md（公私边界清晰化，条目在案）；**开源交付标准 1–5 终对账全 PASS**（#5 补齐
+> docstring 实测 21/21=100% 证据）；pytest 130 精确命中基线；远端 main 9a2a9ab7 CI success。
+> **M2.5 六件套（a/e'/b/c/d/f）全部收官 → 下一步 M3 map&patch。**
+> **M3.1 ✅（2026-11-24，M3 开工首期）**：内存映射视图 + 地址换算——新模块 binowl/map.py + `binowl map <file> [--to-offset ADDR]`
+> 子命令；elf.parse phdrs 5→6 字段（补 p_memsz）；修复 pe.rva_to_raw 两处潜伏缺口（头区 1:1 / 虚拟尾越界偏移→None）。
+> A1–A7 全 PASS：13 ELF × 48 LOAD 三方全等（map/elf.parse/readelf）、327 条边界断言 0 败、PE 节表 4/4 vs pefile、
+> VTAIL 6/6 坐实 pefile 越界盲区；pytest 130→181（公开克隆 164 passed + 14 skipped，06:30 槽 push 前审出并修复
+> test_map.py 分发边界 skipif 缺口）。解析类档位首期实记 22/3。**远端 push 待 OAuth 重授权**（11-24 06:03 实测 401），
+> 用户 CHANGELOG 已备 [Unreleased]（Added/Fixed/Changed/Notes），版本未 bump（留 M3 阶段收口或用户定夺）。
+> 下一步 M3.2 IAT 修复雏形 / M3.1b 运行时基址对拍。
 
 ## 长期目标（v1.0，对齐 ROADMAP 三阶段）
 
@@ -49,8 +61,8 @@
 |---|---|---|
 | M1 loader ✅ 2026-11-14 收口 | elf.py（头/段/节/动态段/符号表/重定位/checksec 四态）+ pe.py（头/节/导入/导出/Rich）+ 统一 cli.py（ELF/PE magic 自动识别，`python3 -m rekit.cli <file>`） | **回归测试套件常绿**（pytest 全过，58 断言/2026-11-14 实测）；10 样本 fixtures 覆盖 PIE/非 PIE/静态/norelro/execstack/PE(EXE·DLL·富Rich·伪Rich)/系统二进制（对账证据：artifacts/2026-11-14/M1_CLOSEOUT_AUDIT.md） |
 | M1.5 MCP ✅ 2026-11-15 | `rekit mcp` 本地服务器，info/map 包装为 MCP 工具（CLI+MCP 双身份） | cron 日报的自我验收环节实际调用 rekit 工具完成一次交叉验证 ✅ 已达成：verify_mcp.py 独立 stdio 客户端 35/35 PASS（readelf/pefile 权威对拍）+ pytest 58→73 常绿（证据 artifacts/2026-11-15/） |
-| M2 fingerprint（核心 ✅ + M2.5 开源化进行中） | UPX/壳识别、编译器指纹（Rich/MSVC family）、anti_debug_hints（净室观察法；判据 ≥2 独立证据组合——R33） | 识别率 100% 误报 0（17 样本全对拍，11-16/17/18 三连：UPX 3/3·Rich 11 对·anti_debug F1–F5）；**M2.5 开源化四刀 ✅**（a 可安装 11-18 / e' 更名 11-20 / b README·LICENSE 11-21 / c CI 11-22），余 d「fixtures 许可审计」见开源交付标准 |
-| M3 map&patch | 内存映射视图、RVA↔offset 换算、IAT 修复雏形 | 换算对全部段 100% 正确（与手工计算+工具对照） |
+| M2 fingerprint（核心 ✅ + M2.5 开源化 ✅ 全收官） | UPX/壳识别、编译器指纹（Rich/MSVC family）、anti_debug_hints（净室观察法；判据 ≥2 独立证据组合——R33） | 识别率 100% 误报 0（17 样本全对拍，11-16/17/18 三连：UPX 3/3·Rich 11 对·anti_debug F1–F5）；**M2.5 六件套全 ✅**（a 可安装 11-18 / e' 更名 11-20 / b README·LICENSE 11-21 / c CI 11-22 / d fixtures 许可审计 11-22 / **f 面向用户 CHANGELOG+CHARTER 终审计 11-23：开源交付标准 1–5 全 PASS、docstring 21/21、130 断言常绿**） |
+| M3 map&patch（进行中：M3.1 ✅ 2026-11-24） | 内存映射视图 ✅、RVA↔offset 换算 ✅、IAT 修复雏形（M3.2，未开） | 换算对全部段 100% 正确（与手工计算+工具对照）——M3.1 实测：13 ELF × 48 LOAD 三方全等、327 条边界断言 0 败、PE 节表 4/4 vs pefile、CORE 34/34 + PADTAIL 9/9 全等、VTAIL 6/6 我方 None 而 pefile 越界（权威盲区，字节证据在案）；证据 artifacts/2026-11-24/ |
 | M4 cfg | 函数发现、CFG、调用图（x64） | 对 objdump 反汇编结果的覆盖率/一致率达标（数字届时定标） |
 | M5 mini-decompiler | 表达式/控制流恢复（终极） | 小函数输出与人工阅读一致（抽样验收） |
 
